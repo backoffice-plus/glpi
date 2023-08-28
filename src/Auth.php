@@ -83,6 +83,7 @@ class Auth extends CommonGLPI
     const X509     = 6;
     const API      = 7;
     const COOKIE   = 8;
+    const AUTHORIZATION_BEARER = 9;
     const NOT_YET_AUTHENTIFIED = 0;
 
     const USER_DOESNT_EXIST       = 0;
@@ -659,6 +660,40 @@ class Auth extends CommonGLPI
                     $this->addToError(__("Login with external token disabled"));
                 }
                 break;
+
+            case self::AUTHORIZATION_BEARER:
+                if(!file_exists(__DIR__.'/../plugins/singlesignon/inc/provider.class.php')) {
+                    $this->addToError("Missing singlesingon plugin");
+                    break;
+                }
+
+                include_once('../plugins/singlesignon/inc/provider.class.php');
+
+                $signon_provider = new PluginSinglesignonProvider();
+
+                if (!$signon_provider->getFromDB(1)) {
+                    $this->addToError("Provider not found.");
+                    break;
+                }
+
+                if (!$signon_provider->fields['is_active']) {
+                    $this->addToError("Provider not active.");
+                    break;
+                }
+
+                $signon_provider->setToken($_REQUEST['authorization_bearer']);
+
+                $user = $signon_provider->findUser();
+
+                if ($user) {
+                    $this->user->fields['name'] = $user->fields['name'];
+                    return true;
+                } else {
+                    $this->addToError("Could not find user by authorization_bearer");
+                }
+
+                break;
+
             case self::COOKIE:
                 $cookie_name   = session_name() . '_rememberme';
 
@@ -1408,6 +1443,11 @@ class Auth extends CommonGLPI
        // using user token for api login
         if (!empty($_REQUEST['user_token'])) {
             return self::API;
+        }
+
+        // using authorization bearer for api login
+        if (!empty($_REQUEST['authorization_bearer'])) {
+            return self::AUTHORIZATION_BEARER;
         }
 
        // Using CAS server

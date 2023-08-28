@@ -262,9 +262,11 @@ abstract class API
             || empty($params['password']))
             && (!isset($params['user_token'])
              || empty($params['user_token']))
+            && (!isset($params['authorization_bearer'])
+                || empty($params['authorization_bearer']))
         ) {
             $this->returnError(
-                __("parameter(s) login, password or user_token are missing"),
+                __("parameter(s) login, password, user_token or authorization_bearer are missing"),
                 400,
                 "ERROR_LOGIN_PARAMETERS_MISSING"
             );
@@ -272,7 +274,7 @@ abstract class API
 
         $auth = new Auth();
 
-       // fill missing params (in case of user_token)
+       // fill missing params (in case of user_token or authorization_bearer)
         if (!isset($params['login'])) {
             $params['login'] = '';
         }
@@ -283,6 +285,9 @@ abstract class API
         $noAuto = true;
         if (isset($params['user_token']) && !empty($params['user_token'])) {
             $_REQUEST['user_token'] = Sanitizer::dbEscape($params['user_token']);
+            $noAuto = false;
+        } else if (isset($params['authorization_bearer']) && !empty($params['authorization_bearer'])) {
+            $_REQUEST['authorization_bearer'] = $params['authorization_bearer'];
             $noAuto = false;
         } else if (!$CFG_GLPI['enable_api_login_credentials']) {
             $this->returnError(
@@ -305,7 +310,13 @@ abstract class API
                 && !empty($params['user_token'])
             ) {
                 $this->returnError(__("parameter user_token seems invalid"), 401, "ERROR_GLPI_LOGIN_USER_TOKEN", false);
+            } else if (
+                isset($params['authorization_bearer'])
+                && !empty($params['authorization_bearer'])
+            ) {
+                $this->returnError(__("parameter authorization_bearer seems invalid"), 401, "ERROR_GLPI_LOGIN_AUTHORIZATION_BEARER", false);
             }
+
             $this->returnError($err, 401, "ERROR_GLPI_LOGIN", false);
         }
 

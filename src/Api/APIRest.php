@@ -578,6 +578,17 @@ class APIRest extends API
             }
         }
 
+        // try to retrieve authorization_bearer in header
+        if (
+            isset($headers['Authorization'])
+            && (strpos($headers['Authorization'], 'Bearer') !== false)
+        ) {
+            $auth = explode(' ', $headers['Authorization']);
+            if (isset($auth[1])) {
+                $parameters['authorization_bearer'] = $auth[1];
+            }
+        }
+
        // try to retrieve session_token in header
         if (isset($headers['Session-Token'])) {
             $parameters['session_token'] = $headers['Session-Token'];
