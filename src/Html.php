@@ -1098,8 +1098,13 @@ HTML;
         header("Content-Type: text/html; charset=UTF-8");
 
         if (!$allow_insecured_iframe) {
-            // Allow only frame from same server to prevent click-jacking
-            header('x-frame-options:SAMEORIGIN');
+            $config = Config::getConfigurationValues('core', ['content_security_policy']);
+
+            if(isset($config['content_security_policy']))
+            	header('Content-Security-Policy: '.$config['content_security_policy']);
+            else
+                // Allow on frame from same server to prevent click-jacking
+                header('x-frame-options:SAMEORIGIN');
         }
 
         // Send extra expires header
